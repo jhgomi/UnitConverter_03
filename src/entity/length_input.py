@@ -5,3 +5,4 @@ from dataclasses import dataclass
 class LengthInput:
     unit: str
     value: float
+    value_str: str
