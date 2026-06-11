@@ -1,83 +1,187 @@
+# Unit Converter (Python) — UnitConverter_03
 
-## Unit Converter (Python)
 ![unit-converter](./unit-converter.jpg)
-### Overview
-- 사용자가 입력한 길이(`단위:값`)를 기반으로, 해당 값을 다른 모든 단위로 변환해 출력하는 프로그램.
-- 새로운 단위를 추가할 때 기존 코드의 변경이 최소화되도록 설계한다.
-- 각 단위 변환 로직은 테스트 코드로 검증한다.
 
-### 가상환경 설정 및 실행
+길이 값(`단위:값`)을 한 번 입력하면, **아래 변환 규칙·출력 형식·검증 기대**에 맞는 결과를 일관되게 돌려받는 CLI 프로그램.
+
+> 상세 요구·테스트: [docs/PRD.md](docs/PRD.md) · [docs/TEST_PLAN.md](docs/TEST_PLAN.md)
+
+---
+
+## Overview
+
+- 사용자가 입력한 길이(`단위:값`)를 meter 기준으로 변환해 **지원 단위 전체**를 출력한다.
+- 새 단위 추가 시 기존 코드 변경을 최소화하도록 설계한다 (**OCP**).
+- 파싱 / 검증 / 변환 / 출력 책임을 분리한다 (**SRP**).
+- 변환·검증 동작은 **pytest**로 검증한다.
+
+---
+
+## 실행
+
+### 가상환경 (선택)
+
 ```bash
-# 가상환경 생성
 python -m venv venv
 
-# 가상환경 활성화 (Windows)
+# Windows
 venv\Scripts\activate
 
-# 가상환경 활성화 (macOS/Linux)
+# macOS / Linux
 source venv/bin/activate
 
-# 실행
-python UnitConverter.py
-
-# 가상환경 비활성화
-deactivate
+deactivate   # 비활성화
 ```
 
-### 기본 요구사항
-1. 사용자 입력 예시:
-   ```
-   meter:2.5
-   ```
-   → 출력:
-   ```
-   2.5 meter = 8.2 feet
-   2.5 meter = 2.7 yard
-   ...
-   ```
+### CLI
 
-2. 현재 지원 단위:
-   - meter
-   - feet
-   - yard
+```bash
+python UnitConverter.py
+```
 
-3. 새로운 단위가 추가될 때도 기존 코드의 변경이 최소화되도록 할 것.
+프롬프트에 `단위:값` 형식으로 입력한다.
 
-4. 각 단위 간 변환이 정확히 계산되도록 테스트 코드를 작성할 것.
+### 테스트
 
-### 비즈니스 로직
-- `1 meter = 3.28084 feet`
-- `1 meter = 1.09361 yard`
-- feet/yard 간의 비율은 meter 기반으로 계산.
+```bash
+python -m pytest tests/ -v
+```
 
-### 품질 요구사항
-- OCP를 만족하는 설계
-- SRP를 만족하는 클래스 구성
-- 입력 값 검증 (음수, 잘못된 형식, 없는 단위)
+---
 
-### 추가 요구사항
-- **설정 외부화**
-   - 변환 비율을 외부 설정 파일(JSON/YAML)에서 로드
-- **동적으로 단위와 비율을 등록할 수 있도록 한다**
-   - 사용자 입력으로 `1 cubit = 0.4572 meter`를 등록하고 사용 가능
-- **출력 포맷 선택 기능** 
-   - JSON / CSV / 표 형태 출력
+## 기본 요구사항
 
+### 1. 입력·출력
 
-## 생성형AI를 활용한 Activities (6 시간)
+**입력 예:**
 
-1. 문제 코드 및 기본 요구사항 분석 (0.5시간)
-   - 기본 코드구조, 로직 이해
-2. 기본 요구사항 및 품질 요구사항 구현 (2시간)
-   - OCP를 만족하는 인터페이스 구현 
-   - SRP를 만족하도록 클래스 구현 
-   - 입력값 검증을 위한 구현
-3. TC 구현 (0.5시간)
-   - 단위변환 기능 검증 및 입력 값 검증 TC 작성 
-4. 추가 요구사항 구현 (2시간)
-   - 3개 요구사항 구현 및 TC 작성 
-5. 회고 및 발표 (1시간)
-   - 실습 목표와 달성도
-   - AI를 어떻게 활용했나? 도움이 된 순간과 한계는?
-   - TC를 추가해보면서 개선에 미친 영향, TC 작성 팁
-   - 클린코드와 리팩토링에서 느낀 장점과 어려운점
+```
+meter:2.5
+```
+
+**출력 예** (입력 단위 meter 포함 **3단위 전부**, feet/yard는 소수 **1자리**):
+
+```
+2.5 meter = 2.5 meter
+2.5 meter = 8.2 feet
+2.5 meter = 2.7 yard
+```
+
+- 출력 형식: `{value} {unit} = {converted} {target_unit}` (줄 단위)
+- **meter**: 입력에 표시된 값 그대로 유지
+- **feet / yard**: 소수 첫째 자리까지 (예: `8.2`, `2.7`)
+
+### 2. 지원 단위
+
+| 단위 | 식별자 |
+|------|--------|
+| meter | `meter` |
+| feet | `feet` |
+| yard | `yard` |
+
+- 소문자 식별자만 사용한다.
+- **기준 단위는 meter** — 모든 변환의 중간값.
+
+### 3. 변환 비율 (SSOT)
+
+| 변환 | 비율 |
+|------|------|
+| meter → feet | `1 m = 3.28084 ft` |
+| meter → yard | `1 m = 1.09361 yd` |
+
+- feet ↔ yard 변환은 **meter를 거쳐** 계산한다.
+- feet / yard → meter: `value / ratio`
+
+### 4. 입력 검증
+
+잘못된 입력은 **변환하지 않고** 오류 메시지 1줄을 출력한 뒤 종료한다.
+
+| 조건 | 입력 예 | 오류 메시지 |
+|------|---------|-------------|
+| `:` 없음 | `meter` | `Invalid format. Use unit:value (ex: meter:2.5)` |
+| 숫자 아님 | `meter:abc` | `Invalid number: abc` |
+| 미지원 단위 | `inch:1` | `Unknown unit: inch` |
+| 음수 | `meter:-2.5` | `Negative value not allowed: -2.5` |
+
+### 5. 설계·품질
+
+- **OCP**: 새 단위 추가 시 기존 변환 로직 최소 수정 (전략·레지스트리 패턴 권장)
+- **SRP**: 파싱 / 검증 / 변환 / 출력 분리
+- **결정성**: 동일 입력 → 동일 출력 문자열 (매 실행마다 결과가 달라지면 안 됨)
+- 변환 비율·정밀도 정책은 한 곳(`constants.py` 등)에서 관리
+
+### 6. 테스트
+
+- Mom Test에서 확인한 기대를 pytest로 고정한다.
+- TDD: **RED → GREEN → REFACTOR** (한 사이클에 한 행동)
+- RED: `tests/`만 수정 · GREEN: `src/` 또는 `UnitConverter.py`
+
+| Test ID | Given | Then (요약) |
+|---------|-------|-------------|
+| T-FMT-01 | `meter:2.5` | `8.2 feet`, `2.7 yard` 포함 · §출력 예 3줄 |
+| T-NEG-01 | `meter:-2.5` | 변환 없음 · 오류 |
+| T-SAME-01 | `meter:2.5` 2회 | 출력 문자열 완전 동일 |
+| T-FMT-ERR | `meter` | `Invalid format` |
+| T-NUM-ERR | `meter:abc` | `Invalid number: abc` |
+| T-UNIT-ERR | `inch:1` | `Unknown unit: inch` |
+| T-CONV-FT | `feet:8.2` | meter·yard 변환 줄 출력 |
+
+자세한 플랜: [docs/TEST_PLAN.md](docs/TEST_PLAN.md)
+
+---
+
+## 프로젝트 구조
+
+```
+UnitConverter_03/
+├── UnitConverter.py          # CLI 진입점
+├── src/
+│   ├── entity/               # LengthInput, constants, …
+│   ├── component/            # parse, validate, convert, format
+│   └── validate_lines.py     # Boundary — grid 검증 API
+├── tests/
+├── docs/
+│   ├── PRD.md
+│   └── TEST_PLAN.md
+└── README.md                 # 본 문서 (과제·비율·출력 SSOT)
+```
+
+---
+
+## 추가 요구사항 (세션 4 — 현재 범위 밖)
+
+아래는 **추가 과제**이며, 세션 3 기본 구현 범위에 포함하지 않는다.
+
+- **설정 외부화** — 변환 비율을 JSON/YAML 등 외부 설정에서 로드
+- **동적 단위 등록** — 예: `1 cubit = 0.4572 meter` 런타임 등록
+- **출력 포맷 선택** — JSON / CSV / 표 형태 출력
+
+---
+
+## 생성형 AI 활용 Activities (6시간)
+
+1. **문제 코드 및 기본 요구사항 분석** (0.5시간)  
+   기본 코드 구조·로직 이해 · [docs/PRD.md](docs/PRD.md) · Mom Test
+
+2. **기본 요구사항 및 품질 요구사항 구현** (2시간)  
+   OCP 인터페이스 · SRP 클래스 분리 · 입력값 검증
+
+3. **TC 구현** (0.5시간)  
+   단위 변환·입력 검증 pytest · RED → GREEN → REFACTOR
+
+4. **추가 요구사항 구현** (2시간)  
+   세션 4 항목 3개 및 TC
+
+5. **회고 및 발표** (1시간)  
+   실습 목표·달성도 · AI 활용 · TC·리팩터링 회고
+
+---
+
+## 참고 문서
+
+| 문서 | 내용 |
+|------|------|
+| [docs/PRD.md](docs/PRD.md) | FR · SC · API · 테스트 요구 |
+| [docs/TEST_PLAN.md](docs/TEST_PLAN.md) | pytest 플랜 · ARRR |
+| [Report/01.REPORT.md](Report/01.REPORT.md) | Mom Test |
+| [Report/03.REPORT.md](Report/03.REPORT.md) | 세션 3 워크북 |

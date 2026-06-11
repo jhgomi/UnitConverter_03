@@ -1,0 +1,42 @@
+# UnitConverter_03 — Cursor Rules (Session 3)
+
+## Domain
+- 문제: `unit`과 `value`를 **한 번** 입력(`unit:value`) → README·PRD와 일치하는 변환 줄 또는 명확한 오류.
+- SSOT: `docs/PRD.md` > `README.md` > `Report/01`. 비율·정밀도·오류 문구는 문서 기준만.
+- 범위: meter/feet/yard CLI, 입력 검증, 결정적 출력, pytest Test Loop.
+- 범위 밖: GUI, JSON/CSV/표, cubit·동적 단위, 설정 외부화 (세션 4).
+- grid: conversion line 문자열 리스트. `{value} {unit} = {converted} {target}` 형식.
+- 불변식 SC-1: 동일 입력 → 출력 바이트 동일.
+- 불변식 SC-2: `meter:2.5` → `8.2 feet`, `2.7 yard` (소수 1자리).
+- 불변식 SC-3: 음수·형식·미지원 단위 → 변환 없음, 오류만.
+- 상수: 1m=3.28084ft, 1m=1.09361yd. SC-2 맞추기 위한 임의 상수·하드코딩 금지.
+
+## API
+- `validate_lines(grid) -> dict`
+- 반환: `{ "status": "pass"|"fail"|"incomplete", "failed_lines": [...] }`
+- `pass`: grid가 PRD/README 기대를 전부 충족.
+- `fail`: 위반 줄이 있음 → `failed_lines`에 해당 줄(또는 식별자) 나열.
+- `incomplete`: 판정 불가(빈 grid, 필수 줄 부족, 형식 미확정 등).
+- 구현 위치: `src/validate_lines.py`. 테스트: `tests/test_validate_lines.py`.
+
+## ECB (Entity · Component · Boundary)
+- **Entity**: `LengthInput`(unit, value), `ConversionLine`, 검증 결과. 순수 데이터, I/O 없음.
+- **Component**: parse / validate / convert / format. Entity만 다루는 순수 로직. SRP·OCP 준수.
+- **Boundary**: CLI(`UnitConverter.py`), `validate_lines(grid)`. 입·출력·판정 경계만 담당.
+- 의존 방향: Boundary → Component → Entity. Entity/Component는 Boundary에 의존하지 않음.
+- 단위 추가 시 Component(레지스트리·전략) 확장 우선. Boundary·Entity 변경 최소화.
+
+## TDD
+- 순서: **RED → GREEN → REFACTOR**. 한 사이클에 한 행동.
+- **RED**: `tests/`만 수정. 실패하는 테스트를 먼저 고정.
+- **GREEN**: `src/` 또는 리팩터 대상만 수정. 테스트 통과에 필요한 최소 구현.
+- **REFACTOR**: 동작 유지하며 ECB·SRP 정리. 테스트 green 유지.
+- 금지: assert 완화, `skip`, `xfail`, SC-2를 위한 비율 하드코딩.
+- 검증: `python -m pytest tests/ -v`
+
+## AI
+- 항상 **한국어**로 응답.
+- TDD 작업 시 응답 **첫 줄**에 Phase 선언: `[RED]`, `[GREEN]`, `[REFACTOR]`.
+- Mom Test·PRD·SC-1~3와 충돌하는 제안은 거절하고 SSOT를 인용.
+- **git commit**은 사용자가 명시적으로 요청할 때만. 임의 commit·push 금지.
+- 요청 범위 밖 파일·기능(GUI, JSON 등)은 제안하지 않음.
