@@ -1,35 +1,30 @@
-def main():
-    input_str = input("Insert value for converting (ex: meter:2.5): ")
+import sys
+from pathlib import Path
 
-    if ':' not in input_str:
-        print("Invalid format. Use unit:value (ex: meter:2.5)")
+sys.path.insert(0, str(Path(__file__).parent / "src"))
+
+from component.convert import convert
+from component.format import format_lines
+from component.parse import parse
+from component.validate import validate_input
+
+
+def main() -> None:
+    input_str = input().strip()
+
+    length_input, parse_error = parse(input_str)
+    if parse_error is not None:
+        print(parse_error)
         return
 
-    unit, value_str = input_str.split(':', 1)
-
-    try:
-        value = float(value_str)
-    except ValueError:
-        print(f"Invalid number: {value_str}")
+    validation_error = validate_input(length_input)
+    if validation_error is not None:
+        print(validation_error)
         return
 
-    if unit == "meter":
-        meter_value = value
-    elif unit == "feet":
-        meter_value = value / 3.28084
-    elif unit == "yard":
-        meter_value = value / 1.09361
-    else:
-        print(f"Unknown unit: {unit}")
-        return
-
-    in_meters = meter_value
-    in_feet = meter_value * 3.28084
-    in_yards = meter_value * 1.09361
-
-    print(f"{value} {unit} = {in_meters} meter")
-    print(f"{value} {unit} = {in_feet} feet")
-    print(f"{value} {unit} = {in_yards} yard")
+    conversion_lines = convert(length_input)
+    for line in format_lines(conversion_lines, length_input):
+        print(line)
 
 
 if __name__ == "__main__":
