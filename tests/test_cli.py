@@ -1,4 +1,4 @@
-"""README §6 Test ID — CLI (L2) RED 스켈레톤. 구현 없음 → pytest FAILED 기대."""
+"""PRD §8.1 Test ID — CLI (L2) · SC-1~3 AAA 스켈레톤."""
 
 from __future__ import annotations
 

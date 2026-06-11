@@ -1,3 +1,5 @@
+"""PRD §4 SC-2 · T-VAL-* — Boundary (L1) AAA 스켈레톤."""
+
 from validate_lines import validate_lines
 
 

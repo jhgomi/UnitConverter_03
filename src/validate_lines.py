@@ -1,3 +1,5 @@
+"""Boundary API — grid 검증 (PRD §4 SC-2 · Harness T-VAL-*)."""
+
 from component.grid_validate import evaluate_grid
 from entity.validation_result import ValidationResult
 
